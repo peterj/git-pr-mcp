@@ -62,6 +62,41 @@ g: Github = Github(auth=auth)
 mcp = FastMCP("git-pr-mcp")
 _load_state()
 
+# Configure git user identity and GitHub OAuth token
+def _configure_git():
+    """Configure git user identity and GitHub token for authentication."""
+    try:
+        # Configure git user identity from environment variables
+        git_user_name = os.getenv("GIT_USER_NAME")
+        git_user_email = os.getenv("GIT_USER_EMAIL")
+
+        if git_user_name and git_user_email:
+            subprocess.run(["git", "config", "--global", "user.name", git_user_name], check=True)
+            subprocess.run(["git", "config", "--global", "user.email", git_user_email], check=True)
+            logger.info(f"Configured git user identity: {git_user_name} <{git_user_email}>")
+        else:
+            logger.warning("GIT_USER_NAME and/or GIT_USER_EMAIL not set - git commits may fail")
+
+        # Configure GitHub OAuth token for HTTPS authentication
+        github_token = os.getenv("GITHUB_TOKEN")
+        if github_token:
+            # Set up credential helper to use the GitHub token
+            subprocess.run(["git", "config", "--global", "credential.helper", "store"], check=True)
+            # Configure GitHub credentials - this uses the token as password with username as token
+            subprocess.run([
+                "git", "config", "--global",
+                "url.https://oauth2:" + github_token + "@github.com/.insteadOf",
+                "https://github.com/"
+            ], check=True)
+            logger.info("Configured git to use GitHub token for HTTPS authentication")
+        else:
+            logger.warning("GITHUB_TOKEN not found - git push operations may fail")
+
+    except Exception as e:
+        logger.warning(f"Failed to configure git settings: {str(e)}")
+
+_configure_git()
+
 # Helper function to parse repo URL (simplistic)
 def _parse_repo_url(repo_url: str) -> tuple[Optional[str], Optional[str]]:
     # Regex to capture owner and repo name from common Git URL patterns

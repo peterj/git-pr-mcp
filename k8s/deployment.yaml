@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: git-pr-mcp
+  labels:
+    app: git-pr-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: git-pr-mcp
+  template:
+    metadata:
+      labels:
+        app: git-pr-mcp
+    spec:
+      containers:
+      - name: git-pr-mcp
+        image: # TODO: add image
+        ports:
+        - containerPort: 8000
+        env:
+        - name: FASTMCP_HOST
+          value: "0.0.0.0"
+        - name: FASTMCP_PORT
+          value: "8000"
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: git-pr-mcp
+              key: GITHUB_TOKEN
+        - name: GIT_USER_NAME
+          value: "MCP Git Agent"
+        - name: GIT_USER_EMAIL
+          value: "user@domain.com"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+      restartPolicy: Always
